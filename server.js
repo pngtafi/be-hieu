@@ -10,7 +10,11 @@ const os = require('os');
 const admin = require('firebase-admin');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: '*',  // Cho phép tất cả các domain (hoặc chỉ định domain cụ thể)
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+}));
+
 app.use(bodyParser.json());
 
 // Firebase config
@@ -62,19 +66,41 @@ app.post('/api/login', (req, res) => {
 
 // Lấy danh sách ảnh cho trang Home
 app.get('/api/images/home', (req, res) => {
-  const sql = 'SELECT * FROM images WHERE JSON_CONTAINS(page, \'\"home"\')';
+  // Kiểm tra câu truy vấn SQL trước
+  const sql = "SELECT * FROM images WHERE JSON_CONTAINS(page, '\"home\"')";
+
   db.query(sql, (err, results) => {
     if (err) {
+      console.error('Lỗi khi truy vấn cơ sở dữ liệu:', err);
       return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu' });
     }
-    const sliderImage = results.find(image => image.type === "slider");
-    const containerImageFirst = results.find(image => image.type === "container-first");
-    const featureWorkImage = results.filter(image => image.type === "feature-work");
-    const logosBrandImage = results.filter(image => image.type === "logos-brand");
-    const containerImageSecond = results.find(image => image.type === "container-second");
-    const footerImage = results.filter(image => image.type === "footer");
-    const containerFooterImage = results.filter(image => image.type === "container-footer");
-    res.json({ sliderImage, containerImageFirst, featureWorkImage, logosBrandImage, containerImageSecond, footerImage, containerFooterImage });
+
+    console.log('Kết quả trả về từ database:', results);  // Log kết quả từ database
+
+    // Nếu không có dữ liệu, trả về lỗi 404
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy hình ảnh cho trang home' });
+    }
+
+    // Phân loại các ảnh theo type
+    const sliderImage = results.find(image => image.type === 'slider');
+    const containerImageFirst = results.find(image => image.type === 'container-first');
+    const featureWorkImage = results.filter(image => image.type === 'feature-work');
+    const logosBrandImage = results.filter(image => image.type === 'logos-brand');
+    const containerImageSecond = results.find(image => image.type === 'container-second');
+    const footerImage = results.filter(image => image.type === 'footer');
+    const containerFooterImage = results.filter(image => image.type === 'container-footer');
+
+    // Trả về dữ liệu dưới dạng JSON
+    res.json({
+      sliderImage,
+      containerImageFirst,
+      featureWorkImage,
+      logosBrandImage,
+      containerImageSecond,
+      footerImage,
+      containerFooterImage,
+    });
   });
 });
 
@@ -190,5 +216,5 @@ app.put('/api/images/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server đang chạy tại cổng ${PORT}`));
