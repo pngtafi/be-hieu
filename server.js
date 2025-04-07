@@ -12,7 +12,6 @@ const admin = require('firebase-admin');
 const app = express();
 app.use(cors({
   origin: '*',  // Cho phép tất cả các domain (hoặc chỉ định domain cụ thể)
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
 }));
 
 app.use(bodyParser.json());
