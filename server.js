@@ -14,9 +14,10 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Firebase config
-const serviceAccount = require('./firebaseKey.json');
+const firebaseConfig = JSON.parse(process.env.FIREBASE_CONFIG);
+firebaseConfig.private_key = firebaseConfig.private_key.replace(/\\n/g, '\n');
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert(firebaseConfig),
   storageBucket: "be-hieu.appspot.com" // Thay bằng project-id thực tế
 });
 const bucket = admin.storage().bucket();
