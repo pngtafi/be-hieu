@@ -118,6 +118,38 @@ app.get('/api/images/about', (req, res) => {
   });
 });
 
+app.get('/api/images/work', (req, res) => {
+  // Kiểm tra câu truy vấn SQL trước
+  const sql = "SELECT * FROM images WHERE JSON_CONTAINS(page, '\"work\"')";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Lỗi khi truy vấn cơ sở dữ liệu:', err);
+      return res.status(500).json({ error: 'Lỗi truy vấn cơ sở dữ liệu' });
+    }
+
+    console.log('Kết quả trả về từ database:', results);  // Log kết quả từ database
+
+    // Nếu không có dữ liệu, trả về lỗi 404
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'Không tìm thấy hình ảnh cho trang work' });
+    }
+
+    const columnWork1 = results.filter(image => image.type === 'column1');
+    const columnWork2 = results.filter(image => image.type === 'column2');
+    const columnWork3 = results.filter(image => image.type === 'column3');
+    const columnWork4 = results.filter(image => image.type === 'column4');
+
+    // Trả về dữ liệu dưới dạng JSON
+    res.json({
+      columnWork1,
+      columnWork2,
+      columnWork3,
+      columnWork4,
+    });
+  });
+});
+
 // Lấy thông tin ảnh theo ID
 app.get('/api/images/:id', (req, res) => {
   const { id } = req.params;
