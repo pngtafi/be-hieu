@@ -165,6 +165,34 @@ app.get('/api/images/:id', (req, res) => {
   });
 });
 
+router.get('/api/images/:page/:id', async (req, res) => {
+  const { page, id } = req.params;
+
+  // Chỉ cho phép một số trang cụ thể, ví dụ: work, about, home,...
+  const allowedPages = ['work']; // bạn có thể thêm 'about', 'home' nếu muốn
+
+  if (!allowedPages.includes(page)) {
+    return res.status(400).json({ error: 'Trang không hợp lệ' });
+  }
+
+  try {
+    const result = await db.query(
+      'SELECT * FROM images WHERE id = ? AND page = ?',
+      [id, page]
+    );
+
+    if (result.length > 0) {
+      res.json({ image: result[0] });
+    } else {
+      res.status(404).json({ error: 'Không tìm thấy ảnh' });
+    }
+  } catch (error) {
+    console.error('Lỗi truy vấn:', error);
+    res.status(500).json({ error: 'Lỗi máy chủ' });
+  }
+});
+
+
 // Upload ảnh lên Firebase Storage
 app.post('/api/images/upload', upload.single('image'), async (req, res) => {
   try {
