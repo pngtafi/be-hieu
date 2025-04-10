@@ -165,32 +165,27 @@ app.get('/api/images/:id', (req, res) => {
   });
 });
 
-router.get('/api/images/:page/:id', async (req, res) => {
+app.get('/api/images/:page/:id', async (req, res) => {
   const { page, id } = req.params;
 
-  // Chỉ cho phép một số trang cụ thể, ví dụ: work, about, home,...
-  const allowedPages = ['work']; // bạn có thể thêm 'about', 'home' nếu muốn
-
+  const allowedPages = ['work']; // Cho phép truy cập ảnh từ trang "work" thôi
   if (!allowedPages.includes(page)) {
     return res.status(400).json({ error: 'Trang không hợp lệ' });
   }
 
-  try {
-    const result = await db.query(
-      'SELECT * FROM images WHERE id = ? AND page = ?',
-      [id, page]
-    );
-
-    if (result.length > 0) {
-      res.json({ image: result[0] });
-    } else {
-      res.status(404).json({ error: 'Không tìm thấy ảnh' });
+  const sql = 'SELECT * FROM images WHERE id = ? AND JSON_CONTAINS(page, ?)';
+  db.query(sql, [id, JSON.stringify(`"${page}"`)], (err, results) => {
+    if (err) {
+      console.error('Lỗi truy vấn:', err);
+      return res.status(500).json({ error: 'Lỗi máy chủ' });
     }
-  } catch (error) {
-    console.error('Lỗi truy vấn:', error);
-    res.status(500).json({ error: 'Lỗi máy chủ' });
-  }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy ảnh' });
+    }
+    res.json({ image: results[0] });
+  });
 });
+
 
 
 // Upload ảnh lên Firebase Storage
