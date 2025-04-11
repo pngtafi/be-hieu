@@ -270,5 +270,51 @@ app.put('/api/images/:id', upload.single('image'), async (req, res) => {
   }
 });
 
+// Lưu dữ liệu canvas xuống MySQL
+app.post('/api/work/:id/save', (req, res) => {
+  const { id } = req.params; // id ảnh work
+  const items = req.body.items; // danh sách item từ frontend
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: 'Invalid data format' });
+  }
+
+  // Xoá hết dữ liệu cũ trước
+  const deleteSql = 'DELETE FROM work_items WHERE work_id = ?';
+  db.query(deleteSql, [id], (err) => {
+    if (err) return res.status(500).json({ error: 'Lỗi khi xoá dữ liệu cũ' });
+
+    if (items.length === 0) {
+      return res.json({ success: true, message: 'Đã xoá tất cả item' });
+    }
+
+    const insertSql = `
+      INSERT INTO work_items (work_id, type, content, x, y, width, height, fontSize, color)
+      VALUES ?
+    `;
+
+    const values = items.map(item => [
+      id,
+      item.type,
+      item.content,
+      item.x,
+      item.y,
+      item.width || null,
+      item.height || null,
+      item.fontSize || null,
+      item.color || null,
+    ]);
+
+    db.query(insertSql, [values], (err) => {
+      if (err) {
+        console.error('Lỗi khi lưu dữ liệu:', err);
+        return res.status(500).json({ error: 'Lỗi khi lưu dữ liệu' });
+      }
+      res.json({ success: true, message: 'Đã lưu thành công' });
+    });
+  });
+});
+
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Server đang chạy tại cổng ${PORT}`));
