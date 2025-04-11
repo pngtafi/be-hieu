@@ -294,7 +294,8 @@ app.post('/api/work/:id/save', (req, res) => {
     if (items.length === 0) {
       return res.json({ success: true, message: 'Đã xoá tất cả item' });
     }
-
+    console.log('ID:', id);
+    console.log('Items:', items);
     const insertSql = `
       INSERT INTO work_items (work_id, type, content, x, y, width, height, fontSize, color)
       VALUES ?
@@ -311,7 +312,7 @@ app.post('/api/work/:id/save', (req, res) => {
       item.fontSize || null,
       item.color || null,
     ]);
-
+    console.log('Values:', values);
     db.query(insertSql, [values], (err) => {
       if (err) {
         console.error('Lỗi khi lưu dữ liệu:', err);
@@ -319,6 +320,22 @@ app.post('/api/work/:id/save', (req, res) => {
       }
       res.json({ success: true, message: 'Đã lưu thành công' });
     });
+  });
+});
+
+// GET endpoint để lấy dữ liệu work detail theo work id
+app.get('/api/work/:id', (req, res) => {
+  const { id } = req.params; // Lấy work_id từ URL
+  // Giả sử bảng lưu dữ liệu là work_items, cột work_id chứa id của work
+  const sql = 'SELECT * FROM work_items WHERE work_id = ? ORDER BY id ASC';
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('Lỗi truy vấn work detail:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+
+    // Trả về kết quả nếu có dữ liệu
+    res.json({ success: true, data: results });
   });
 });
 
