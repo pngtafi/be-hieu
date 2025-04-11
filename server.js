@@ -274,64 +274,69 @@ app.put('/api/images/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-// 📥 GET /api/work/:id - Lấy danh sách items của work
-app.get('/api/work/:id', async (req, res) => {
-  const workId = req.params.id;
-  try {
-    const [rows] = await db.query('SELECT * FROM work_items WHERE work_id = ?', [workId]);
-
-    const items = rows.map(row => ({
-      id: row.id,
-      type: row.type,
-      content: row.content,
-      x: row.x,
-      y: row.y,
-      width: row.width,
-      height: row.height,
-    }));
-
-    res.json({ success: true, data: items });
-  } catch (error) {
-    console.error('Lỗi get work items:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  }
-});
-
-// 💾 POST /api/work/:id/save - Lưu toàn bộ danh sách items
-app.post('/api/work/:id/save', async (req, res) => {
-  const workId = req.params.id;
-  const { items } = req.body;
+// Lưu dữ liệu canvas xuống MySQL
+app.post('/api/work/:id/save', (req, res) => {
+  const { id } = req.params; // id ảnh work
+  const items = req.body.items; // danh sách item từ frontend
 
   if (!Array.isArray(items)) {
-    return res.status(400).json({ success: false, error: 'Invalid items array' });
+    return res.status(400).json({ error: 'Invalid data format' });
   }
 
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-
-    // Xoá hết các item cũ
-    await connection.query('DELETE FROM work_items WHERE work_id = ?', [workId]);
-
-    // Thêm lại item mới
-    for (const item of items) {
-      const { type, content, x, y, width, height } = item;
-
-      await connection.query(
-        'INSERT INTO work_items (work_id, type, content, x, y, width, height) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [workId, type, content, x, y, width, height]
-      );
+  // Xoá hết dữ liệu cũ trước
+  const deleteSql = 'DELETE FROM work_items WHERE work_id = ?';
+  db.query(deleteSql, [id], (err) => {
+    if (err) {
+      console.error('Lỗi SQL khi xoá:', err);
+      return res.status(500).json({ error: 'Lỗi khi xoá dữ liệu cũ' });
     }
 
-    await connection.commit();
-    res.json({ success: true });
-  } catch (error) {
-    await connection.rollback();
-    console.error('Lỗi save work items:', error);
-    res.status(500).json({ success: false, error: 'Server error' });
-  } finally {
-    connection.release();
-  }
+    if (items.length === 0) {
+      return res.json({ success: true, message: 'Đã xoá tất cả item' });
+    }
+    console.log('ID:', id);
+    console.log('Items:', items);
+    const insertSql = `
+      INSERT INTO work_items (work_id, type, content, x, y, width, height, fontSize, color)
+      VALUES ?
+    `;
+
+    const values = items.map(item => [
+      id,
+      item.type,
+      item.content,
+      item.x,
+      item.y,
+      item.width || null,
+      item.height || null,
+      item.fontSize || null,
+      item.color || null,
+    ]);
+    console.log('Values:', values);
+    db.query(insertSql, [values], (err) => {
+      if (err) {
+        console.error('Lỗi khi lưu dữ liệu:', err);
+        return res.status(500).json({ error: 'Lỗi khi lưu dữ liệu' });
+      }
+      res.json({ success: true, message: 'Đã lưu thành công' });
+    });
+  });
+});
+
+// GET endpoint để lấy dữ liệu work detail theo work id
+app.get('/api/work/:id', (req, res) => {
+  const { id } = req.params; // Lấy work_id từ URL
+  // Giả sử bảng lưu dữ liệu là work_items, cột work_id chứa id của work
+  const sql = 'SELECT * FROM work_items WHERE work_id = ? ORDER BY id ASC';
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error('Lỗi truy vấn work detail:', err);
+      return res.status(500).json({ success: false, error: err.message });
+    }
+
+    // Trả về kết quả nếu có dữ liệu
+    res.json({ success: true, data: results });
+  });
 });
 
 
