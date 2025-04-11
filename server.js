@@ -9,6 +9,8 @@ const multer = require('multer');
 const os = require('os');
 const admin = require('firebase-admin');
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const app = express();
 app.use(cors({
   origin: '*',  // Cho phép tất cả các domain (hoặc chỉ định domain cụ thể)
