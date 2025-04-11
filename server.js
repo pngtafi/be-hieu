@@ -286,7 +286,10 @@ app.post('/api/work/:id/save', (req, res) => {
   // Xoá hết dữ liệu cũ trước
   const deleteSql = 'DELETE FROM work_items WHERE work_id = ?';
   db.query(deleteSql, [id], (err) => {
-    if (err) return res.status(500).json({ error: 'Lỗi khi xoá dữ liệu cũ' });
+    if (err) {
+      console.error('Lỗi SQL khi xoá:', err);
+      return res.status(500).json({ error: 'Lỗi khi xoá dữ liệu cũ' });
+    }
 
     if (items.length === 0) {
       return res.json({ success: true, message: 'Đã xoá tất cả item' });
