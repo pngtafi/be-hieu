@@ -302,6 +302,7 @@ app.post('/api/work/:id/save', (req, res) => {
 
     const values = items.map(item => [
       id,
+      item.work_id,
       item.type,
       item.content,
       item.x,
